@@ -8,7 +8,7 @@ require('dotenv').config();
 // SIGNUP
 router.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
-
+ 
   try {
     // Check if email already exists
     const userExists = await pool.query(
