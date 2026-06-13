@@ -2,7 +2,11 @@ const service = require('../services/assetService');
 
 const getAllAssets = async (req, res, next) => {
   try {
-    const result = await service.getAllAssets(req.query);
+    const query = { ...req.query };
+    if (req.user && req.user.role === 'employee') {
+      query.employeeId = req.user.id;
+    }
+    const result = await service.getAllAssets(query);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 };

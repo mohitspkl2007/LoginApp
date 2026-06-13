@@ -60,7 +60,7 @@ function EmployeeList() {
       label: 'Employee',
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Avatar name={row.name} size={36} src={row.images && row.images[0] ? `${API_URL}${row.images[0].image_url}` : null} />
+          <Avatar name={row.name} size={36} src={row.profileImage ? `${API_URL}/uploads/${row.profileImage}` : null} />
           <div>
             <div style={{ fontWeight: 600 }}>{row.name}</div>
             <div style={{ fontSize: 12, color: '#8b93a8' }}>#{row.id}</div>

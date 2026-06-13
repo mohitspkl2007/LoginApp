@@ -23,7 +23,8 @@ const sendEmail = async (to, subject, html) => {
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email ? email.toLowerCase().trim() : '';
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
     if (!user) {
       return res.status(404).json({ message: 'Email not found' });

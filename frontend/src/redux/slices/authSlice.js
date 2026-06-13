@@ -17,10 +17,19 @@ export const fetchUser = createAsyncThunk(
   }
 );
 
+const getInitialUser = () => {
+  try {
+    const u = localStorage.getItem('user');
+    return u ? JSON.parse(u) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: null,
+    user: getInitialUser(),
     loading: false,
     error: null
   },
@@ -32,6 +41,7 @@ const authSlice = createSlice({
       state.error = null;
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
     },
     // Set user manually
     setUser: (state, action) => {

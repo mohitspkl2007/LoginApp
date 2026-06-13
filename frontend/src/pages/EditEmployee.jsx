@@ -43,14 +43,21 @@ function EditEmployee() {
       setSkills(skillRes.data);
       const emp = empRes.data.employee || empRes.data;
       setForm({
-        department_id: emp.department_id || '',
+        department_id: emp.departmentId || '',
         phone: emp.phone || '',
         address: emp.address || '',
         designation: emp.designation || '',
         salary: emp.salary || '',
       });
-      setSelectedSkills((emp.skills || []).map(s => s.id));
-      setExistingImages(emp.images || []);
+      
+      // Match skill names (string list) to skill IDs
+      const mappedSkills = (emp.skills || []).map(name => {
+        const found = skillRes.data.find(s => s.skill_name === name);
+        return found ? found.id : null;
+      }).filter(Boolean);
+      setSelectedSkills(mappedSkills);
+
+      setExistingImages(emp.profileImage ? [emp.profileImage] : []);
     }).catch(console.error).finally(() => setFetching(false));
   }, [id]);
 
@@ -195,7 +202,7 @@ function EditEmployee() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                 {existingImages.map((img, i) => (
                   <img key={i}
-                    src={`${API_URL}${img.image_url}`}
+                    src={`${API_URL}/uploads/${img}`}
                     alt={`Employee ${i + 1}`}
                     style={{ width: 72, height: 72, borderRadius: 12, objectFit: 'cover', border: `2px solid ${theme.colors.border}` }}
                   />

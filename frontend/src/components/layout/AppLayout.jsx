@@ -1,40 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchUser } from '../../redux/slices/authSlice';
+import useAuth from '../../hooks/useAuth';
 import { useTheme } from '../../theme/ThemeContext';
 import GlobalSearch from "../ui/GlobalSearch";
 import Sidebar from './Sidebar';
 
 const AppLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
   const { theme } = useTheme();
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { user, error } = useSelector(state => state.auth);
 
   useEffect(() => {
-    if (!user) dispatch(fetchUser());
-  }, [dispatch, user]);
+    localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
-  useEffect(() => {
-    if (error) navigate('/');
-  }, [error, navigate]);
+  const sidebarWidth = sidebarCollapsed ? 72 : 260;
 
   return (
     <div style={{
       minHeight: '100vh',
       background: theme.colors.bgGradient,
     }}>
-      <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
-      <div style={{ position: "fixed", top: 16, left: 280, right: 24, zIndex: 900, display: "flex" }}>
+      <Sidebar 
+        mobileOpen={mobileOpen} 
+        setMobileOpen={setMobileOpen} 
+        isCollapsed={sidebarCollapsed}
+        setIsCollapsed={setSidebarCollapsed}
+      />
+      <div style={{ 
+        position: "fixed", 
+        top: 16, 
+        left: sidebarWidth + 20, 
+        right: 24, 
+        zIndex: 900, 
+        display: "flex",
+        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}>
         <GlobalSearch />
       </div>
       <main className="main-content" style={{
-        marginLeft: 260,
+        marginLeft: sidebarWidth,
         padding: '80px 36px 32px',
         minHeight: '100vh',
-        transition: 'margin 0.3s ease',
+        transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         {children}
       </main>

@@ -13,61 +13,61 @@ export const FloatingInput = ({
 }) => {
   const { theme } = useTheme();
   const [focused, setFocused] = useState(false);
-  const hasValue = value !== undefined && value !== '';
+  const hasValue = value !== undefined && value !== null && value !== '';
 
   return (
-    <div style={{ position: 'relative', marginBottom: 20, ...style }}>
+    <div style={{ position: 'relative', marginBottom: 20, width: '100%', ...style }}>
       {Icon && (
         <Icon
           size={18}
           style={{
             position: 'absolute',
-            left: 16,
+            left: 12,
             top: '50%',
             transform: 'translateY(-50%)',
-            color: focused ? theme.colors.accent : theme.colors.textMuted,
+            color: focused ? theme.colors.accent : theme.colors.textSecondary,
             transition: 'color 0.2s',
-            zIndex: 1,
+            zIndex: 2,
           }}
         />
       )}
       <input
         type={type}
-        value={value}
+        value={value ?? ''}
         onChange={onChange}
         required={required}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
           width: '100%',
-          padding: Icon ? '16px 16px 16px 48px' : '16px 16px 16px 16px',
-          paddingTop: 22,
-          borderRadius: 12,
-          border: `1.5px solid ${focused ? theme.colors.accent : theme.colors.border}`,
-          background: theme.colors.inputBg,
-          color: theme.colors.text,
-          fontSize: 15,
+          padding: Icon ? '18px 12px 6px 40px' : '18px 12px 6px 12px',
+          borderRadius: 8,
+          border: `1px solid ${focused ? theme.colors.accent : theme.colors.border}`,
+          background: theme.colors.inputBg || '#16161f',
+          color: theme.colors.text || '#ffffff',
+          fontSize: 14,
           fontFamily: 'inherit',
           outline: 'none',
-          transition: 'all 0.25s ease',
+          transition: 'all 0.2s ease',
           boxSizing: 'border-box',
-          boxShadow: focused ? `0 0 0 3px ${theme.colors.accent}22` : 'none',
+          boxShadow: focused ? `0 0 0 2px ${theme.colors.accent}15` : 'none',
         }}
         {...rest}
       />
       <label
         style={{
           position: 'absolute',
-          left: Icon ? 48 : 16,
-          top: focused || hasValue ? 8 : '50%',
+          left: Icon ? 40 : 12,
+          top: focused || hasValue ? 6 : '50%',
           transform: focused || hasValue ? 'none' : 'translateY(-50%)',
-          fontSize: focused || hasValue ? 11 : 15,
+          fontSize: focused || hasValue ? 10 : 13,
           fontWeight: focused || hasValue ? 600 : 400,
-          color: focused ? theme.colors.accent : theme.colors.textMuted,
+          color: focused ? theme.colors.accent : theme.colors.textSecondary,
           transition: 'all 0.2s ease',
           pointerEvents: 'none',
-          letterSpacing: focused || hasValue ? '0.04em' : 'normal',
+          letterSpacing: focused || hasValue ? '0.05em' : 'normal',
           textTransform: focused || hasValue ? 'uppercase' : 'none',
+          zIndex: 3,
         }}
       >
         {label}{required && ' *'}
@@ -76,50 +76,72 @@ export const FloatingInput = ({
   );
 };
 
-export const FloatingSelect = ({ label, value, onChange, children, required, style = {} }) => {
+export const FloatingSelect = ({
+  label,
+  value,
+  onChange,
+  children,
+  required = false,
+  style = {},
+  ...rest
+}) => {
   const { theme } = useTheme();
   const [focused, setFocused] = useState(false);
-  const hasValue = value !== undefined && value !== '';
+  const hasValue = value !== undefined && value !== null && value !== '';
 
   return (
-    <div style={{ position: 'relative', marginBottom: 20, ...style }}>
+    <div style={{ position: 'relative', marginBottom: 20, width: '100%', zIndex: 10, ...style }}>
       <select
-        value={value}
+        value={value ?? ''}
         onChange={onChange}
         required={required}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
           width: '100%',
-          padding: '22px 16px 12px',
-          borderRadius: 12,
-          border: `1.5px solid ${focused ? theme.colors.accent : theme.colors.border}`,
-          background: theme.colors.inputBg,
-          color: theme.colors.text,
-          fontSize: 15,
+          padding: '18px 12px 6px 12px',
+          borderRadius: 8,
+          border: `1px solid ${focused ? theme.colors.accent : theme.colors.border}`,
+          background: theme.colors.inputBg || '#16161f',
+          color: theme.colors.text || '#ffffff',
+          fontSize: 14,
           fontFamily: 'inherit',
           outline: 'none',
           appearance: 'none',
           cursor: 'pointer',
           boxSizing: 'border-box',
-          boxShadow: focused ? `0 0 0 3px ${theme.colors.accent}22` : 'none',
+          boxShadow: focused ? `0 0 0 2px ${theme.colors.accent}15` : 'none',
+          zIndex: 11,
         }}
+        {...rest}
       >
         {children}
       </select>
+      {/* Down arrow icon */}
+      <span style={{
+        position: 'absolute',
+        right: 12,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        color: theme.colors.textSecondary,
+        pointerEvents: 'none',
+        fontSize: 12,
+        zIndex: 12
+      }}>▼</span>
       <label
         style={{
           position: 'absolute',
-          left: 16,
-          top: focused || hasValue ? 8 : '50%',
+          left: 12,
+          top: focused || hasValue ? 6 : '50%',
           transform: focused || hasValue ? 'none' : 'translateY(-50%)',
-          fontSize: focused || hasValue ? 11 : 15,
+          fontSize: focused || hasValue ? 10 : 13,
           fontWeight: focused || hasValue ? 600 : 400,
-          color: focused ? theme.colors.accent : theme.colors.textMuted,
+          color: focused ? theme.colors.accent : theme.colors.textSecondary,
           transition: 'all 0.2s ease',
           pointerEvents: 'none',
-          letterSpacing: focused || hasValue ? '0.04em' : 'normal',
+          letterSpacing: focused || hasValue ? '0.05em' : 'normal',
           textTransform: focused || hasValue ? 'uppercase' : 'none',
+          zIndex: 13,
         }}
       >
         {label}{required && ' *'}
@@ -128,15 +150,23 @@ export const FloatingSelect = ({ label, value, onChange, children, required, sty
   );
 };
 
-export const FloatingTextarea = ({ label, value, onChange, rows = 4, required, style = {} }) => {
+export const FloatingTextarea = ({
+  label,
+  value,
+  onChange,
+  rows = 3,
+  required = false,
+  style = {},
+  ...rest
+}) => {
   const { theme } = useTheme();
   const [focused, setFocused] = useState(false);
-  const hasValue = value !== undefined && value !== '';
+  const hasValue = value !== undefined && value !== null && value !== '';
 
   return (
-    <div style={{ position: 'relative', marginBottom: 20, ...style }}>
+    <div style={{ position: 'relative', marginBottom: 20, width: '100%', ...style }}>
       <textarea
-        value={value}
+        value={value ?? ''}
         onChange={onChange}
         rows={rows}
         required={required}
@@ -144,32 +174,34 @@ export const FloatingTextarea = ({ label, value, onChange, rows = 4, required, s
         onBlur={() => setFocused(false)}
         style={{
           width: '100%',
-          padding: '22px 16px 12px',
-          borderRadius: 12,
-          border: `1.5px solid ${focused ? theme.colors.accent : theme.colors.border}`,
-          background: theme.colors.inputBg,
-          color: theme.colors.text,
-          fontSize: 15,
+          padding: '18px 12px 8px 12px',
+          borderRadius: 8,
+          border: `1px solid ${focused ? theme.colors.accent : theme.colors.border}`,
+          background: theme.colors.inputBg || '#16161f',
+          color: theme.colors.text || '#ffffff',
+          fontSize: 14,
           fontFamily: 'inherit',
           outline: 'none',
           resize: 'vertical',
-          minHeight: 100,
+          minHeight: 80,
           boxSizing: 'border-box',
-          boxShadow: focused ? `0 0 0 3px ${theme.colors.accent}22` : 'none',
+          boxShadow: focused ? `0 0 0 2px ${theme.colors.accent}15` : 'none',
         }}
+        {...rest}
       />
       <label
         style={{
           position: 'absolute',
-          left: 16,
-          top: focused || hasValue ? 8 : 20,
-          fontSize: focused || hasValue ? 11 : 15,
+          left: 12,
+          top: focused || hasValue ? 6 : 14,
+          fontSize: focused || hasValue ? 10 : 13,
           fontWeight: focused || hasValue ? 600 : 400,
-          color: focused ? theme.colors.accent : theme.colors.textMuted,
+          color: focused ? theme.colors.accent : theme.colors.textSecondary,
           transition: 'all 0.2s ease',
           pointerEvents: 'none',
-          letterSpacing: focused || hasValue ? '0.04em' : 'normal',
+          letterSpacing: focused || hasValue ? '0.05em' : 'normal',
           textTransform: focused || hasValue ? 'uppercase' : 'none',
+          zIndex: 3,
         }}
       >
         {label}{required && ' *'}

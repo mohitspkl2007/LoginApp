@@ -3,7 +3,9 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const auth = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 const createNotification = require('../src/utils/notificationHelper');
+const nodemailer = require('nodemailer');
 
 const mapLeave = (l) => ({
   ...l,
@@ -24,7 +26,14 @@ const approveLeave = async (req, res) => {
     const leave = await prisma.leaveRequest.update({
       where: { id: parseInt(req.params.id) },
       data: { status },
+      include: {
+        user: true,
+        leaveType: true
+      }
     });
+
+    console.log("Leave status updated to approved or rejected");
+
     await prisma.leaveApproval.create({
       data: {
         leaveRequestId: parseInt(req.params.id),
@@ -34,11 +43,78 @@ const approveLeave = async (req, res) => {
         comments,
       }
     });
+
+    if (status === 'approved') {
+      const year = new Date(leave.startDate).getFullYear();
+      const balance = await prisma.leaveBalance.findFirst({
+        where: { userId: leave.userId, leaveTypeId: leave.leaveTypeId, year }
+      });
+      if (balance) {
+        await prisma.leaveBalance.update({
+          where: { id: balance.id },
+          data: { usedDays: { increment: leave.days } }
+        });
+      } else {
+        await prisma.leaveBalance.create({
+          data: {
+            userId: leave.userId,
+            leaveTypeId: leave.leaveTypeId,
+            year,
+            totalDays: leave.leaveType.maxDays,
+            usedDays: leave.days
+          }
+        });
+      }
+    }
+
     await createNotification({
       userId: leave.userId,
       title: `Leave ${status.charAt(0).toUpperCase() + status.slice(1)}`,
       message: `Your leave request has been ${status}.${comments ? ' Comment: ' + comments : ''}`,
     });
+
+    // Send email notification to employee
+    try {
+      console.log("Sending email to " + leave.user.email);
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: leave.user.email,
+        subject: `Leave Request ${status.toUpperCase()} - Mohit Sapkal HRMS`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; color: #333; line-height: 1.6; max-width: 600px; border-radius: 8px; border: 1px solid #ddd;">
+            <h2 style="color: #6366f1; border-bottom: 2px solid #6366f1; padding-bottom: 8px;">Leave Request Processed</h2>
+            <p>Hello <strong>${leave.user.name}</strong>,</p>
+            <p>Your leave request has been reviewed. Here are the details:</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px;">
+              <tr style="background-color: #f2f2f2;"><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; width: 35%;">Leave Type</td><td style="padding: 10px; border: 1px solid #ddd;">${leave.leaveType?.name || 'General Leave'}</td></tr>
+              <tr><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Start Date</td><td style="padding: 10px; border: 1px solid #ddd;">${new Date(leave.startDate).toLocaleDateString()}</td></tr>
+              <tr style="background-color: #f2f2f2;"><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">End Date</td><td style="padding: 10px; border: 1px solid #ddd;">${new Date(leave.endDate).toLocaleDateString()}</td></tr>
+              <tr><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Total Days</td><td style="padding: 10px; border: 1px solid #ddd;">${leave.days} day(s)</td></tr>
+              <tr style="background-color: #f2f2f2;"><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Status</td><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: ${status === 'approved' ? '#10b981' : '#ef4444'}; text-transform: uppercase;">${status}</td></tr>
+              ${status === 'rejected' ? `<tr><td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Comments</td><td style="padding: 10px; border: 1px solid #ddd;">${comments || 'No comments specified.'}</td></tr>` : ''}
+            </table>
+            <p>If you have any questions, please contact your manager or human resources.</p>
+            <p style="margin-top: 25px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px;">Best Regards,<br/><strong>Mohit Sapkal HRMS Team</strong></p>
+          </div>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log("Email sent successfully");
+    } catch (emailError) {
+      console.log("Email failed to send " + emailError.message);
+    }
+
     res.json({ message: `Leave ${status}!`, leave });
   } catch (err) {
     console.error('APPROVE ERROR:', err.message);
@@ -60,10 +136,48 @@ router.get('/types', async (req, res) => {
 router.get('/balance', auth, async (req, res) => {
   try {
     const year = new Date().getFullYear();
-    const balances = await prisma.leaveBalance.findMany({
+    let balances = await prisma.leaveBalance.findMany({
       where: { userId: req.user.id, year },
     });
-    res.json(balances);
+    
+    // Fetch all leave types to map names
+    const types = await prisma.leaveType.findMany();
+    
+    // Self-healing: if balance entries are missing, initialize them automatically
+    if (balances.length < types.length) {
+      for (const t of types) {
+        const hasBalance = balances.some(b => b.leaveTypeId === t.id);
+        if (!hasBalance) {
+          await prisma.leaveBalance.create({
+            data: {
+              userId: req.user.id,
+              leaveTypeId: t.id,
+              year,
+              totalDays: t.maxDays,
+              usedDays: 0
+            }
+          });
+        }
+      }
+      // Re-fetch balances after creation
+      balances = await prisma.leaveBalance.findMany({
+        where: { userId: req.user.id, year },
+      });
+    }
+    
+    const mapped = balances.map(b => {
+      const type = types.find(t => t.id === b.leaveTypeId);
+      return {
+        id: b.id,
+        leave_type_id: b.leaveTypeId,
+        leave_name: type ? type.name : 'General Leave',
+        available_days: Math.max(0, b.totalDays - b.usedDays),
+        total_days: b.totalDays,
+        used_days: b.usedDays
+      };
+    });
+    
+    res.json(mapped);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -131,8 +245,8 @@ router.get('/all', auth, async (req, res) => {
 });
 
 // PUT approve/reject routes
-router.put('/:id/approve', auth, approveLeave);
-router.put('/action/:id', auth, approveLeave);
+router.put('/:id/approve', auth, authorize('admin', 'hr', 'manager'), approveLeave);
+router.put('/action/:id', auth, authorize('admin', 'hr', 'manager'), approveLeave);
 
 module.exports = router;
 

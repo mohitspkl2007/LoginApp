@@ -1,23 +1,15 @@
-import { useSelector, useDispatch } from 'react-redux';
+import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../redux/slices/authSlice';
-import axios from 'axios';
+import AuthContext from '../context/AuthContext';
 
 import API_URL from '../config/api';
 
 const useAuth = () => {
-  const dispatch = useDispatch();
+  const { user, loading, logout } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { user, loading } = useSelector(state => state.auth);
 
   const handleLogout = async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    try {
-      await axios.post(`${API_URL}/api/auth/logout`, { refreshToken });
-    } catch (err) {
-      console.log('Logout error:', err);
-    }
-    dispatch(logout());
+    await logout();
     navigate('/');
   };
 

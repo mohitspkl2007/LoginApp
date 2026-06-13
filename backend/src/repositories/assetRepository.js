@@ -1,9 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const findAllAssets = async ({ search, status, page, limit }) => {
+const findAllAssets = async ({ search, status, page, limit, employeeId }) => {
   const where = {};
   if (status) where.status = status;
+  if (employeeId) {
+    where.allocations = {
+      some: {
+        employeeId: parseInt(employeeId),
+        status: 'allocated'
+      }
+    };
+  }
   if (search) {
     where.OR = [
       { assetName: { contains: search, mode: 'insensitive' } },

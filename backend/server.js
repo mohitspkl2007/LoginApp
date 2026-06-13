@@ -17,6 +17,9 @@ const errorHandler = require('./src/middleware/errorHandler');
 const assetRoutes = require('./src/routes/assetRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const auditRoutes = require('./src/routes/auditRoutes');
+const studentRoutes = require('./routes/student');
+const salaryRoutes = require('./routes/salary');
+const attendanceRoutes = require('./routes/attendance');
 
 const app = express();
 
@@ -32,9 +35,8 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: process.env.FRONTEND_URL,
+  credentials: true
 }));
 
 app.use(express.json());
@@ -54,6 +56,9 @@ app.use('/api/leave', leaveRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/students', studentRoutes);
+app.use('/api/salaries', salaryRoutes);
+app.use('/api/attendance', attendanceRoutes);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;

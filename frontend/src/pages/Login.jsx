@@ -7,6 +7,7 @@ import { FloatingInput } from '../components/ui/FloatingInput';
 import Button from '../components/ui/Button';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../theme/ThemeContext';
+import { useAuthContext } from '../context/AuthContext';
 import API_URL from '../config/api';
 
 function Login() {
@@ -17,6 +18,8 @@ function Login() {
   const toast = useToast();
   const { theme } = useTheme();
 
+  const { login } = useAuthContext();
+
   const handleLogin = async (e) => {
     e?.preventDefault();
     if (!email || !password) {
@@ -26,8 +29,7 @@ function Login() {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
-      localStorage.setItem('token', res.data.accessToken);
-      localStorage.setItem('refreshToken', res.data.refreshToken);
+      login(res.data.accessToken, res.data.refreshToken, res.data.user);
       toast.success(res.data.message || 'Welcome back!');
       setTimeout(() => navigate('/dashboard'), 800);
     } catch (err) {

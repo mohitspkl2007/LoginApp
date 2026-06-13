@@ -10,12 +10,13 @@ require('dotenv').config();
 router.post('/signup', async (req, res) => {
   const { name, email, password, role } = req.body;
   try {
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email ? email.toLowerCase().trim() : '';
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hashed, role: role || 'employee', isVerified: true }
+      data: { name, email: normalizedEmail, password: hashed, role: role || 'employee', isVerified: true }
     });
     res.status(201).json({ message: 'Registered successfully!', user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
@@ -28,13 +29,14 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
-    console.log("LOGIN EMAIL:", email);
+    const normalizedEmail = email ? email.toLowerCase().trim() : '';
+    console.log("LOGIN EMAIL:", normalizedEmail);
 
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email: normalizedEmail }
     });
 
-console.log("USER FOUND:", user);
+    console.log("USER FOUND:", user);
     if (!user) return res.status(400).json({ message: 'User not found' });
 
     const isMatch = await bcrypt.compare(password, user.password);

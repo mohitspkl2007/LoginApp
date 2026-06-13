@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
-import Dashboard from '../pages/Dashboard';
+import Dashboard from '../pages/Dashboard.jsx';
 import AdminDashboard from '../pages/AdminDashboard';
 import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
@@ -17,6 +17,10 @@ import EditEmployee from '../pages/EditEmployee';
 import Assets from '../pages/Assets';
 import Reports from '../pages/Reports';
 import AddAsset from '../pages/AddAsset';
+import Students from '../pages/Students';
+import SalarySheets from '../pages/SalarySheets';
+import SalaryReports from '../pages/SalaryReports';
+import Attendance from '../pages/Attendance';
 
 function AppRoutes() {
   return (
@@ -38,6 +42,10 @@ function AppRoutes() {
       <Route path="/assets/add" element={<ProtectedRoute><AddAsset /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/assets/edit/:id" element={<ProtectedRoute><AddAsset /></ProtectedRoute>} />
+      <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
+      <Route path="/salaries" element={<ProtectedRoute><SalarySheets /></ProtectedRoute>} />
+      <Route path="/salary-reports" element={<ProtectedRoute><SalaryReports /></ProtectedRoute>} />
+      <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
     </Routes>
   );
 }

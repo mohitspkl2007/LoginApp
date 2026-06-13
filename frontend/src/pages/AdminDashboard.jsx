@@ -5,7 +5,6 @@ import { Trash2, Shield, Users } from 'lucide-react';
 import AppLayout from '../components/layout/AppLayout';
 import PageHeader from '../components/ui/PageHeader';
 import DataTable from '../components/ui/DataTable';
-import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Avatar from '../components/ui/Avatar';
 import ConfirmModal from '../components/ui/ConfirmModal';
@@ -13,12 +12,14 @@ import StatCard from '../components/ui/StatCard';
 import { TableSkeleton } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../theme/ThemeContext';
+import useAuth from '../hooks/useAuth';
 import API_URL from '../config/api';
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const toast = useToast();
   const { theme } = useTheme();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState(null);
@@ -61,6 +62,19 @@ function AdminDashboard() {
     }
   };
 
+  const handleRoleChange = async (userId, newRole) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_URL}/api/admin/users/${userId}/role`, { role: newRole }, {
+        headers: { Authorization: token },
+      });
+      toast.success('User role updated successfully');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update user role');
+    }
+  };
+
   const adminCount = users.filter(u => u.role === 'admin').length;
   const employeeCount = users.filter(u => u.role !== 'admin').length;
   const roles = [...new Set(users.map(u => u.role).filter(Boolean))];
@@ -82,11 +96,31 @@ function AdminDashboard() {
     { key: 'email', label: 'Email' },
     {
       key: 'role',
-      label: 'Role',
+      label: 'Role (Inline Edit)',
       render: (row) => (
-        <Badge variant={row.role === 'admin' ? 'admin' : row.role === 'hr' ? 'accent' : 'default'}>
-          {row.role}
-        </Badge>
+        <select
+          value={row.role}
+          onChange={(e) => handleRoleChange(row.id, e.target.value)}
+          disabled={row.id === currentUser?.id}
+          style={{
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: `1px solid ${theme.colors.border}`,
+            padding: '6px 10px',
+            borderRadius: 8,
+            color: '#fff',
+            fontFamily: 'inherit',
+            fontSize: 13,
+            outline: 'none',
+            cursor: row.id === currentUser?.id ? 'not-allowed' : 'pointer',
+            opacity: row.id === currentUser?.id ? 0.6 : 1,
+            fontWeight: 600
+          }}
+        >
+          <option value="employee" style={{ background: theme.colors.bg }}>employee</option>
+          <option value="manager" style={{ background: theme.colors.bg }}>manager</option>
+          <option value="hr" style={{ background: theme.colors.bg }}>hr</option>
+          <option value="admin" style={{ background: theme.colors.bg }}>admin</option>
+        </select>
       ),
     },
   ];
@@ -126,7 +160,7 @@ function AdminDashboard() {
         filterOptions={roles}
         emptyMessage="No users found"
         actions={(row) => (
-          row.role !== 'admin' ? (
+          row.id !== currentUser?.id ? (
             <Button
               variant="danger"
               size="sm"
@@ -136,7 +170,7 @@ function AdminDashboard() {
               Delete
             </Button>
           ) : (
-            <span style={{ fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' }}>Protected</span>
+            <span style={{ fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic', paddingRight: 8 }}>Active Admin</span>
           )
         )}
       />

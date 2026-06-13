@@ -5,8 +5,8 @@ const createNotification = require('../utils/notificationHelper');
 const getAllAssets = async (query) => {
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
-  const { search, status } = query;
-  return repo.findAllAssets({ search, status, page, limit });
+  const { search, status, employeeId } = query;
+  return repo.findAllAssets({ search, status, page, limit, employeeId });
 };
 
 const getAssetById = async (id) => {

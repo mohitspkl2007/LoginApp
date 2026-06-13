@@ -3,6 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const auth = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 const multer = require('multer');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -14,18 +15,19 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { files: 5 } });
 
 // POST create employee
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, authorize('admin', 'hr'), async (req, res) => {
   const { name, email, password, role, department_id, phone, address, designation, salary, skill_ids } = req.body;
   try {
     let userId;
 
     if (email) {
       // Create new user account
-      let user = await prisma.user.findUnique({ where: { email } });
+      const normalizedEmail = email.toLowerCase().trim();
+      let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (!user) {
         const hashed = await bcrypt.hash(password || 'Password@123', 10);
         user = await prisma.user.create({
-          data: { name, email, password: hashed, role: role || 'employee', isVerified: true }
+          data: { name, email: normalizedEmail, password: hashed, role: role || 'employee', isVerified: true }
         });
       }
       userId = user.id;
@@ -79,7 +81,7 @@ router.post('/upload/:id', auth, upload.array('images', 5), async (req, res) => 
 });
 
 // GET all employees
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, authorize('admin', 'hr', 'manager'), async (req, res) => {
   try {
     const employees = await prisma.employeeProfile.findMany({
       include: {
@@ -112,6 +114,9 @@ router.get('/:id', auth, async (req, res) => {
       }
     });
     if (!profile) return res.status(404).json({ message: 'Employee not found' });
+    if (req.user.role === 'employee' && req.user.id !== profile.userId) {
+      return res.status(403).json({ message: 'Access Denied' });
+    }
     res.json({ ...profile, name: profile.user?.name, email: profile.user?.email, department_name: profile.department?.departmentName });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -119,7 +124,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // PUT update employee
-router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
+router.put('/:id', auth, authorize('admin', 'hr'), upload.array('images', 5), async (req, res) => {
   const { department_id, phone, address, designation, salary, skill_ids } = req.body;
   try {
     const skillMap = {"1":"JavaScript","2":"TypeScript","3":"React","4":"Node.js","5":"Python","6":"Java","7":"C++","8":"SQL","9":"PostgreSQL","10":"MongoDB","11":"HTML","12":"CSS","13":"Git","14":"Docker","15":"AWS","16":"REST API","17":"GraphQL","18":"Redux","19":"Next.js","20":"Express.js","21":"Prisma","22":"Figma","23":"Photoshop","24":"Excel","25":"Communication","26":"Leadership","27":"Project Management","28":"Agile","29":"Scrum"}; const ids = skill_ids ? (Array.isArray(skill_ids) ? skill_ids : [skill_ids]) : []; const skillsArray = ids.map(id => skillMap[String(id)] || String(id));
@@ -142,7 +147,7 @@ router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
 });
 
 // DELETE employee
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, authorize('admin'), async (req, res) => {
   try {
     await prisma.employeeProfile.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ message: 'Employee deleted!' });
